@@ -1,6 +1,4 @@
-# PhytoFiber Analysis Pipeline
-
-Research-grade computational pipeline for **corn-husk microfibrillated cellulose (MFC) bio-composite** testing aligned with CWSF / Regeneron ISEF expectations.
+# Data Analysis for Science Fair Project "PhytoFiber: Engineering an Anthocyanin-Functionalized Lignocellulosic Bio-Composite for Automated, Machine Learning-Assisted Spoilage Transduction"
 
 ## Project Goals
 
@@ -59,7 +57,7 @@ Detailed entry rules are in:
 
 - `docs/RAW_DATA_ENTRY_GUIDE.md`
 
-### Critical naming convention for spoilage photos
+### Naming convention for spoilage photos
 
 The ML pipeline matches rows using `sample_id` + `time_h` extracted from the image filename:
 
