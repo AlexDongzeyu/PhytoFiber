@@ -1,0 +1,5 @@
+sample_id,treatment,time_h,R,G,B,color_retention_pct,notes
+S01,control,0,,,,100,
+S02,treated,0,,,,100,
+S03,control,24,,,,,
+S04,treated,24,,,,,

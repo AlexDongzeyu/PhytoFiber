@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.DS_Store
+Thumbs.db
+*.log
+data/processed/*.csv
+visualizations/*.png
+visualizations/*.jpg
+visualizations/*.svg

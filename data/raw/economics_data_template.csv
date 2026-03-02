@@ -1,0 +1,6 @@
+batch_id,ingredient,cost_usd,amount_used,unit,notes
+B01,sodium_alginate,,,,,
+B01,corn_husk_feedstock,,,,,
+B01,anthocyanin_source,,,,,
+B01,calcium_chloride,,,,,
+B01,total_fiber_length_m,,,,measure for cost_per_meter
