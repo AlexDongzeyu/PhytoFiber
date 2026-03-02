@@ -103,3 +103,17 @@ After running all scripts, expected visuals include:
 - `visualizations/calibration_curve.png` (generated when calibration data is present)
 - `visualizations/confusion_matrix_logistic.png` (generated when ML outputs are present)
 - `visualizations/confusion_matrix_random_forest.png` (generated when ML outputs are present)
+
+## Experimental Tests → CSV → Figure Map (Brief)
+
+| Test | What you test | Raw CSV | Main output chart |
+|---|---|---|---|
+| TEST 0: Colorimetric calibration | Fiber color response vs pH board for halochromic baseline | `data/raw/calibration_data.csv` (`sample_id,pH,R,G,B`) | `visualizations/calibration_curve.png` (pH vs G) |
+| TEST 1: Tensile analysis | Compare mechanical strength across groups (5%, 10%, 15%) | `data/raw/tensile_data.csv` (`sample_id,group,force_n,diameter_mm`) | `visualizations/tensile_strength_boxplot.png` (boxplot + strip, MPa) |
+| TEST 2: Halochromic latency | Time response in ammonia vapors (`<20 s` target) | `data/raw/latency_data.csv` (`sample_id,group,response_time_s`) | Build as a grouped box/violin chart in your report or notebook |
+| TEST 3: Light/acid stability | Color retention over 0-168 h for treated vs control | `data/raw/stability_data.csv` (`sample_id,treatment,time_h,G`) | Build a time-course trend line with 95% CI in a notebook |
+| TEST 4: Chicken spoilage | Fiber color shift vs chicken surface pH in real conditions | `data/raw/spoilage_data.csv` + extracted RGB from images | `visualizations/spoilage_regplot.png` (G-channel vs pH) |
+| TEST 5: Digestibility | Acid/baseline integrity before and after simulated GI stages | `data/raw/digestibility_data.csv` (`sample_id,phase,mass_loss_pct,structure_status`) | Build simple bar/paired-point chart for mass loss and notes |
+| TEST 6: Economics | Cost-per-meter and benchmark comparison vs electronic label | `data/raw/economics_data.csv` | Add a bar chart for `cost_per_meter` vs 0.50 comparator |
+
+`data/raw/spoilage_images/` filenames must remain in `<sample_id>_t<time_h>.<ext>` format so the ML step correctly links each image to `spoilage_data.csv`.
