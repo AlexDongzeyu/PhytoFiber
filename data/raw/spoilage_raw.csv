@@ -1,0 +1,7 @@
+sample_id,Time_Hours,Meat_pH,Image_Filename,container_id,fiber_group,notes
+S01,0,,,C1,B,
+S01,6,,,C1,B,
+S01,12,,,C1,B,
+S01,18,,,C1,B,
+S01,24,,,C1,B,
+S01,36,,,C1,B,

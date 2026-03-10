@@ -1,119 +1,142 @@
-# Data Analysis for Science Fair Project "PhytoFiber: Engineering an Anthocyanin-Functionalized Lignocellulosic Bio-Composite for Automated, Machine Learning-Assisted Spoilage Transduction"
+# PhytoFiber Advanced Data Pipeline
 
-## Project Goals
+This repository is a reproducible analysis pipeline for the project “PhytoFiber: Engineering an Anthocyanin-Functionalized Lignocellulosic Bio-Composite for Automated, Machine Learning-Assisted Spoilage Transduction.” It is organized for science-fair judging standards: raw data in one place, deterministic scripts, processed outputs separated from source data, and board-ready figures generated from code.
 
-- Standardize colorimetric and halochromic measurements with reproducible computer vision.
-- Validate mechanical and thermodynamic performance statistically.
-- Train a predictive spoilage classifier from RGB-derived features.
-- Generate publication-style figures for display board and paper.
+## What The Pipeline Does
 
-## Repository Structure
+- Runs unsupervised computer vision on fiber images using K-means clustering with `n_clusters=2`.
+- Extracts fiber-only RGB statistics automatically and writes a processed color table.
+- Converts tensile measurements to stress in MPa and performs Shapiro-Wilk, Levene, one-way ANOVA, and Tukey HSD.
+- Fits a degree-2 polynomial calibration model from fiber color to pH and reports `R²`.
+- Quantifies the chicken spoilage relationship with Pearson’s `r`.
+- Trains a G-channel logistic regression spoilage classifier and compares it against a random forest benchmark.
+- Produces high-resolution figures for a paper, board, or GitHub portfolio.
+
+## Workspace Layout
 
 ```text
 data/
-  raw/                  # manually collected raw CSV + image folders
-  processed/            # cleaned outputs and analysis artifacts
-notebooks/
-  01_cv_extraction.ipynb
-  02_statistical_tests.ipynb
-  03_ml_prediction.ipynb
+  raw/
+    spoilage_images/
+    calibration_raw.csv
+    calibration_data.csv
+    tensile_raw.csv
+    tensile_data.csv
+    spoilage_raw.csv
+    spoilage_data.csv
+  processed/
+images/
+  raw/
+img/                    # legacy archive of photos and scanned PDFs
+docs/
+  RAW_DATA_ENTRY_GUIDE.md
 scripts/
+  01_cv_extraction.py
+  02_biomechanics_anova.py
+  03_predictive_models.py
   run_cv_extraction.py
   run_statistics.py
   run_ml.py
   build_figures.py
 src/
   phytofiber_analysis/
-    __init__.py
-    config.py
-    io_utils.py
-    cv_extraction.py
-    statistical_tests.py
-    ml_prediction.py
-    visualization.py
-visualizations/         # board-ready high DPI figures
-requirements.txt
+visualizations/
 ```
 
-## Quick Start
+## Environment Setup
 
-1. Create and activate virtual environment.
-2. Install dependencies:
-   - `pip install -r requirements.txt`
-3. Put your data in `data/raw/`:
-   - CSV files (use templates provided)
-   - photos for spoilage/cv extraction
-4. Run:
-   - `python scripts/run_cv_extraction.py`
-   - `python scripts/run_statistics.py`
-   - `python scripts/run_ml.py`
-   - `python scripts/build_figures.py`
+Python 3.10+ is the intended target. In this workspace the environment is already configured, but the standard setup is:
 
-## Input Data Templates
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
 
-Templates are in `data/raw/` with `_template.csv` suffix. Duplicate each template and rename without `_template` before analysis.
+## Recommended Run Order
 
-Detailed entry rules are in:
+```powershell
+python scripts/01_cv_extraction.py
+python scripts/02_biomechanics_anova.py
+python scripts/03_predictive_models.py
+python scripts/build_figures.py
+```
 
-- `docs/RAW_DATA_ENTRY_GUIDE.md`
+Legacy script names still work if you prefer them.
 
-### Naming convention for spoilage photos
+## Inputs Supported
 
-The ML pipeline matches rows using `sample_id` + `time_h` extracted from the image filename:
+The pipeline accepts both the original repo filenames and the simpler handout filenames.
 
-- Required image pattern: `<sample_id>_t<time_h>.jpg`
-- Example: `S01_t12.jpg`
+### Mechanical data
 
-Store images in:
+- `tensile_raw.csv` with `sample_id,Group,Diameter_mm,Force_N`
+- `tensile_data.csv` with `sample_id,group,force_n,diameter_mm`
 
-- `data/raw/spoilage_images/`
+### Calibration data
 
-## Statistical Protocols
+- `calibration_raw.csv` with `pH_Level,Image_Filename`
+- `calibration_data.csv` with `sample_id,pH,R,G,B`
 
-- Normality: Shapiro-Wilk (`scipy.stats.shapiro`)
-- Homogeneity of variance: Levene (`scipy.stats.levene`)
-- Group comparison: One-way ANOVA (`scipy.stats.f_oneway`)
-- Post-hoc pairwise comparison: Tukey HSD (`statsmodels.stats.multicomp.pairwise_tukeyhsd`)
+### Spoilage data
 
-## Machine Learning Protocol
+- `spoilage_raw.csv` with `sample_id,Time_Hours,Meat_pH,Image_Filename`
+- `spoilage_data.csv` with `sample_id,time_h,meat_surface_ph`
 
-- Target label from spoilage pH:
-  - `0` = safe (`pH < 6.5`)
-  - `1` = spoiled (`pH >= 6.5`)
-- Features: RGB channels plus optional engineered ratio feature.
-- Baseline classifier: Logistic Regression
-- Optional model: Random Forest
-- Outputs:
-  - confusion matrix CSV
-  - metrics JSON
-  - model comparison CSV
+### Image sources
 
-## Reproducibility Notes
+The CV stage checks these in order:
 
-- All processing scripts are deterministic with `random_state=42`.
-- Figure generation uses `seaborn-v0_8-whitegrid` and high-resolution export (`dpi=300`).
-- Pipeline writes all derived files into `data/processed/` or `visualizations/`.
+1. [data/raw/spoilage_images](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/data/raw/spoilage_images)
+2. [images/raw](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/images/raw)
+3. [img](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/img)
 
-## Current Figure Outputs
+For automated spoilage matching, image filenames should follow `<sample_id>_t<time_h>.<ext>`, for example `S01_t12.jpg`.
 
-After running all scripts, expected visuals include:
+## Main Outputs
 
-- `visualizations/tensile_strength_boxplot.png`
-- `visualizations/spoilage_regplot.png`
-- `visualizations/calibration_curve.png` (generated when calibration data is present)
-- `visualizations/confusion_matrix_logistic.png` (generated when ML outputs are present)
-- `visualizations/confusion_matrix_random_forest.png` (generated when ML outputs are present)
+Processed tables are written to [data/processed](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/data/processed). Key artifacts include:
 
-## Experimental Tests → CSV → Figure Map (Brief)
+- `color_data_final.csv`
+- `cv_extracted_spoilage.csv`
+- `tensile_with_mpa.csv`
+- `assumption_checks.csv`
+- `anova_results.csv`
+- `tukey_results.csv`
+- `calibration_model.json`
+- `calibration_predictions.csv`
+- `pearson_results.json`
+- `spoilage_labeled.csv`
+- `model_comparison.csv`
+- `ml_metrics.json`
 
-| Test | What you test | Raw CSV | Main output chart |
-|---|---|---|---|
-| TEST 0: Colorimetric calibration | Fiber color response vs pH board for halochromic baseline | `data/raw/calibration_data.csv` (`sample_id,pH,R,G,B`) | `visualizations/calibration_curve.png` (pH vs G) |
-| TEST 1: Tensile analysis | Compare mechanical strength across groups (5%, 10%, 15%) | `data/raw/tensile_data.csv` (`sample_id,group,force_n,diameter_mm`) | `visualizations/tensile_strength_boxplot.png` (boxplot + strip, MPa) |
-| TEST 2: Halochromic latency | Time response in ammonia vapors (`<20 s` target) | `data/raw/latency_data.csv` (`sample_id,group,response_time_s`) | Build as a grouped box/violin chart in your report or notebook |
-| TEST 3: Light/acid stability | Color retention over 0-168 h for treated vs control | `data/raw/stability_data.csv` (`sample_id,treatment,time_h,G`) | Build a time-course trend line with 95% CI in a notebook |
-| TEST 4: Chicken spoilage | Fiber color shift vs chicken surface pH in real conditions | `data/raw/spoilage_data.csv` + extracted RGB from images | `visualizations/spoilage_regplot.png` (G-channel vs pH) |
-| TEST 5: Digestibility | Acid/baseline integrity before and after simulated GI stages | `data/raw/digestibility_data.csv` (`sample_id,phase,mass_loss_pct,structure_status`) | Build simple bar/paired-point chart for mass loss and notes |
-| TEST 6: Economics | Cost-per-meter and benchmark comparison vs electronic label | `data/raw/economics_data.csv` | Add a bar chart for `cost_per_meter` vs 0.50 comparator |
+Figures are written to [visualizations](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/visualizations):
 
-`data/raw/spoilage_images/` filenames must remain in `<sample_id>_t<time_h>.<ext>` format so the ML step correctly links each image to `spoilage_data.csv`.
+- `tensile_strength_boxplot.png`
+- `spoilage_regplot.png`
+- `calibration_curve.png`
+- `confusion_matrix_logistic.png`
+- `confusion_matrix_random_forest.png`
+- `predictive_analysis_dashboard.png`
+
+## Important Data Integrity Note
+
+The scanned PDFs in [img/classification](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/img/classification) and the handout PDF are useful as experimental references, but they are not a trustworthy substitute for structured numeric CSV data. This repository intentionally does not invent measurements from scanned sheets. To get valid statistical results, enter the real measurements into the raw CSV files.
+
+## Why This Version Is Stronger
+
+- The CV extraction is unsupervised rather than manual.
+- The tensile workflow checks assumptions before interpreting ANOVA.
+- The pH calibration is explicitly modeled as non-linear.
+- The spoilage claim is supported by both correlation and classification.
+- The figures are generated from code and are reproducible.
+
+## Next Data You Should Add
+
+If you want the full pipeline to produce final science-fair results immediately, the highest-value files to complete are:
+
+1. [data/raw/tensile_raw.csv](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/data/raw/tensile_raw.csv)
+2. [data/raw/calibration_raw.csv](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/data/raw/calibration_raw.csv)
+3. [data/raw/spoilage_raw.csv](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/data/raw/spoilage_raw.csv)
+
+Once those contain real measurements and matching image filenames, the scripts can generate defensible final outputs end-to-end.
