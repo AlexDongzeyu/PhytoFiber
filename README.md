@@ -1,59 +1,22 @@
-# PhytoFiber Advanced Data Pipeline
+# PhytoFiber
 
-This repository is a reproducible analysis pipeline for the project “PhytoFiber: Engineering an Anthocyanin-Functionalized Lignocellulosic Bio-Composite for Automated, Machine Learning-Assisted Spoilage Transduction.” It is organized for science-fair judging standards: raw data in one place, deterministic scripts, processed outputs separated from source data, and board-ready figures generated from code.
+PhytoFiber is a reproducible analysis repository for a color-changing fiber spoilage project. The repo keeps raw records, standardized working images, analysis code, and generated figures separated so the full workflow can be rerun from source data.
 
-## What The Pipeline Does
+## What Is Here
 
-- Runs unsupervised computer vision on fiber images using K-means clustering with `n_clusters=2`.
-- Extracts fiber-only RGB statistics automatically and writes a processed color table.
-- Converts tensile measurements to stress in MPa and performs Shapiro-Wilk, Levene, one-way ANOVA, and Tukey HSD.
-- Fits a degree-2 polynomial calibration model from fiber color to pH and reports `R²`.
-- Quantifies the chicken spoilage relationship with Pearson’s `r`.
-- Trains a G-channel logistic regression spoilage classifier and compares it against a random forest benchmark.
-- Produces high-resolution figures for a paper, board, or GitHub portfolio.
+- `data/raw/`: active CSV inputs and raw photo archives.
+- `images/raw/`: standardized calibration and spoilage images used by the CV pipeline.
+- `data/processed/`: generated intermediate tables and model outputs.
+- `visualizations/`: generated board-ready and advanced figures.
+- `scripts/`: runnable pipeline entry points.
+- `src/phytofiber_analysis/`: reusable analysis and plotting code.
+- `docs/RAW_DATA_ENTRY_GUIDE.md`: detailed instructions for filling the raw CSV files.
+- `docs/DELIVERABLES_CHECKLIST.md`: short checklist for what the repo can produce for reports or fair submission.
+- `img/classification/`: scanned reference material and handout PDFs, kept as supporting records rather than machine-readable inputs.
 
-## Workspace Layout
+## Main Workflow
 
-```text
-data/
-  raw/
-    spoilage_images/
-    calibration_raw.csv
-    calibration_data.csv
-    tensile_raw.csv
-    tensile_data.csv
-    spoilage_raw.csv
-    spoilage_data.csv
-  processed/
-images/
-  raw/
-img/                    # legacy archive of photos and scanned PDFs
-docs/
-  RAW_DATA_ENTRY_GUIDE.md
-scripts/
-  01_cv_extraction.py
-  02_biomechanics_anova.py
-  03_predictive_models.py
-  run_cv_extraction.py
-  run_statistics.py
-  run_ml.py
-  build_figures.py
-src/
-  phytofiber_analysis/
-visualizations/
-```
-
-## Environment Setup
-
-Python 3.10+ is the intended target. In this workspace the environment is already configured, but the standard setup is:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
-
-## Recommended Run Order
+Run the pipeline in this order:
 
 ```powershell
 python scripts/01_cv_extraction.py
@@ -62,81 +25,77 @@ python scripts/03_predictive_models.py
 python scripts/build_figures.py
 ```
 
-Legacy script names still work if you prefer them.
+The numbered scripts and the `run_*` scripts are equivalent entry points. `build_figures.py` now generates the core figures and, when the latency, stability, digestibility, and economics tables are present, also runs the advanced analysis layer.
 
-## Inputs Supported
+## How The Files Link Together
 
-The pipeline accepts both the original repo filenames and the simpler handout filenames.
+1. CV extraction reads standardized images from `images/raw/` and writes color features into `data/processed/`.
+2. Statistics reads `tensile_raw.csv`, computes tensile stress, then writes descriptives, assumption checks, ANOVA, Tukey, and effect sizes.
+3. Predictive modeling joins spoilage measurements with extracted color data, fits the calibration and spoilage models, then writes labeled data and ML metrics.
+4. Figure building reads the processed outputs and renders the final figures into `visualizations/`.
 
-### Mechanical data
+## Raw Inputs
 
-- `tensile_raw.csv` with `sample_id,Group,Diameter_mm,Force_N`
-- `tensile_data.csv` with `sample_id,group,force_n,diameter_mm`
+Core inputs:
 
-### Calibration data
+- `data/raw/tensile_raw.csv`
+- `data/raw/calibration_raw.csv`
+- `data/raw/spoilage_raw.csv`
 
-- `calibration_raw.csv` with `pH_Level,Image_Filename`
-- `calibration_data.csv` with `sample_id,pH,R,G,B`
+Supporting inputs for the advanced layer:
 
-### Spoilage data
+- `data/raw/latency_data.csv`
+- `data/raw/stability_data.csv`
+- `data/raw/digestibility_data.csv`
+- `data/raw/economics_data.csv`
 
-- `spoilage_raw.csv` with `sample_id,Time_Hours,Meat_pH,Image_Filename`
-- `spoilage_data.csv` with `sample_id,time_h,meat_surface_ph`
+Use `docs/RAW_DATA_ENTRY_GUIDE.md` for field-level guidance.
 
-### Image sources
+## Generated Outputs
 
-The CV stage checks these in order:
+Core processed outputs include:
 
-1. [data/raw/spoilage_images](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/data/raw/spoilage_images)
-2. [images/raw](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/images/raw)
-3. [img](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/img)
+- CV tables such as `color_data_final.csv` and `cv_extracted_spoilage.csv`
+- biomechanics outputs such as `tensile_with_mpa.csv`, `assumption_checks.csv`, `anova_results.csv`, `tukey_results.csv`, and `effect_sizes.csv`
+- ML outputs such as `spoilage_labeled.csv`, `classifier_predictions.csv`, `model_comparison.csv`, and calibration summaries
 
-For automated spoilage matching, image filenames should follow `<sample_id>_t<time_h>.<ext>`, for example `S01_t12.jpg`.
-
-## Main Outputs
-
-Processed tables are written to [data/processed](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/data/processed). Key artifacts include:
-
-- `color_data_final.csv`
-- `cv_extracted_spoilage.csv`
-- `tensile_with_mpa.csv`
-- `assumption_checks.csv`
-- `anova_results.csv`
-- `tukey_results.csv`
-- `calibration_model.json`
-- `calibration_predictions.csv`
-- `pearson_results.json`
-- `spoilage_labeled.csv`
-- `model_comparison.csv`
-- `ml_metrics.json`
-
-Figures are written to [visualizations](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/visualizations):
+Core figures include:
 
 - `tensile_strength_boxplot.png`
+- `tensile_strength_violin.png`
 - `spoilage_regplot.png`
 - `calibration_curve.png`
 - `confusion_matrix_logistic.png`
 - `confusion_matrix_random_forest.png`
+- `roc_curve_logistic.png`
 - `predictive_analysis_dashboard.png`
 
-## Important Data Integrity Note
+Advanced figures generated when the extra tables are present include:
 
-The scanned PDFs in [img/classification](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/img/classification) and the handout PDF are useful as experimental references, but they are not a trustworthy substitute for structured numeric CSV data. This repository intentionally does not invent measurements from scanned sheets. To get valid statistical results, enter the real measurements into the raw CSV files.
+- `weibull_probability_plot.png`
+- `tensile_raincloud.png`
+- `calibration_4pl_curve.png`
+- `spoilage_bland_altman.png`
+- `spoilage_svm_decision_surface.png`
+- `latency_raincloud.png`
+- `latency_barplot.png`
+- `stability_timeseries.png`
+- `digestibility_mass_loss.png`
+- `economics_breakdown.png`
+- `formulation_optimization_radar.png`
 
-## Why This Version Is Stronger
+Generated outputs in `data/processed/` and `visualizations/` are reproducible artifacts. The repo is set up to keep most of those generated files out of git.
 
-- The CV extraction is unsupervised rather than manual.
-- The tensile workflow checks assumptions before interpreting ANOVA.
-- The pH calibration is explicitly modeled as non-linear.
-- The spoilage claim is supported by both correlation and classification.
-- The figures are generated from code and are reproducible.
+## Notes On Source Material
 
-## Next Data You Should Add
+- `images/raw/` is the curated image set the pipeline is meant to work from.
+- `data/raw/*_img/` folders are raw evidence archives and may contain extra reference shots.
+- `img/classification/` PDFs are useful for documentation, but not as a substitute for structured CSV measurements.
 
-If you want the full pipeline to produce final science-fair results immediately, the highest-value files to complete are:
+## Environment
 
-1. [data/raw/tensile_raw.csv](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/data/raw/tensile_raw.csv)
-2. [data/raw/calibration_raw.csv](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/data/raw/calibration_raw.csv)
-3. [data/raw/spoilage_raw.csv](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/data/raw/spoilage_raw.csv)
-
-Once those contain real measurements and matching image filenames, the scripts can generate defensible final outputs end-to-end.
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```

@@ -10,6 +10,7 @@ __pycache__/
 Thumbs.db
 *.log
 data/processed/*.csv
+data/processed/*.json
 visualizations/*.png
 visualizations/*.jpg
 visualizations/*.svg

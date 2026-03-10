@@ -1,100 +1,104 @@
 # Raw Data Entry Guide
 
-This project now supports both the original repo filenames and the simpler handout filenames. Use one naming style consistently.
+Use the active files in `data/raw/`. The older template files are no longer the working source of truth.
 
-## 1) Supported CSV Inputs
+## Files To Fill
 
-Recommended files in [data/raw](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/data/raw):
+Core pipeline inputs:
 
-- `tensile_raw.csv` or `tensile_data.csv`
-- `calibration_raw.csv` or `calibration_data.csv`
-- `spoilage_raw.csv` or `spoilage_data.csv`
-- Optional: `latency_data.csv`, `stability_data.csv`, `digestibility_data.csv`, `economics_data.csv`
+- `tensile_raw.csv`
+- `calibration_raw.csv`
+- `spoilage_raw.csv`
 
-The pipeline automatically prefers the more detailed repo files when both exist.
+Supporting advanced-analysis inputs:
 
-## 2) Image Locations
+- `latency_data.csv`
+- `stability_data.csv`
+- `digestibility_data.csv`
+- `economics_data.csv`
 
-Preferred active image folder:
+If time is limited, fill the first three first. They drive the main CV, statistics, and ML workflow.
 
-- [data/raw/spoilage_images](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/data/raw/spoilage_images)
+## Image Sources
 
-Also supported:
+- `images/raw/`: standardized working images used by the CV pipeline.
+- `data/raw/*_img/`: raw photo archives for calibration, spoilage, latency, stability, digestibility, and tensile reference records.
+- `img/classification/`: scanned supporting PDFs and record sheets.
 
-- [images/raw](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/images/raw)
-- [img](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/img)
+The current scripted CV workflow is intended to run from the curated image set in `images/raw/`. The larger raw archives are kept as evidence and reference material.
 
-The CV script scans `data/raw/spoilage_images` first, then `images/raw`, then the legacy [img](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/img) archive.
+## Spoilage Naming Rule
 
-## 3) Spoilage Image Naming
-
-For automatic matching between pH measurements and photos, use:
+For automatic spoilage matching, use filenames like:
 
 - `S01_t0.jpg`
 - `S01_t6.jpg`
 - `S01_t12.jpg`
 - `S02_t24.heic`
 
-Pattern rule:
+Pattern:
 
 - `<sample_id>_t<time_h>.<ext>`
 
-The parser extracts `sample_id` and `time_h` directly from the filename. This is required for fully automated spoilage analysis.
+That lets the parser recover `sample_id` and `time_h` directly from the file name.
 
-## 4) Required Columns
+## What Each File Should Contain
 
-### `tensile_raw.csv`
+`tensile_raw.csv`
 
-- Required: `sample_id,Group,Diameter_mm,Force_N`
-- The script normalizes these to internal analysis columns.
+- `sample_id`: unique fiber ID such as `T01`
+- `Group`: formulation group such as `A`, `B`, or `C`
+- `Diameter_mm`: fiber diameter in millimeters
+- `Force_N`: breaking force in newtons
 
-### `tensile_data.csv`
+`calibration_raw.csv`
 
-- Required: `sample_id,group,force_n,diameter_mm`
+- `pH_Level`: known pH value
+- `Image_Filename`: exact file name of the calibration image
 
-### `calibration_raw.csv`
+`spoilage_raw.csv`
 
-- Required: `pH_Level,Image_Filename`
-- The CV pipeline fills RGB values by matching the image filename.
+- `sample_id`: sample ID such as `S01`
+- `Time_Hours`: elapsed time
+- `Meat_pH`: measured chicken pH
+- `Image_Filename`: exact image file name
 
-### `calibration_data.csv`
+`latency_data.csv`
 
-- Required: `sample_id,pH,R,G,B`
+- response timing measurements for the halochromic response
 
-### `spoilage_raw.csv`
+`stability_data.csv`
 
-- Required: `sample_id,Time_Hours,Meat_pH`
-- Strongly recommended: `Image_Filename`
+- timepoint color values and color retention measurements
 
-### `spoilage_data.csv`
+`digestibility_data.csv`
 
-- Required: `sample_id,time_h,meat_surface_ph`
+- mass change or structure-degradation measurements
 
-## 5) Analysis Rules Used by the Pipeline
+`economics_data.csv`
 
-- Computer vision: unsupervised K-means with `n_clusters=2`, darker cluster retained as fiber.
-- Tensile physics: radius, area, and stress are computed automatically.
-- Assumption checks: Shapiro-Wilk and Levene are run before ANOVA reporting.
-- Calibration model: degree-2 polynomial regression with reported `R²`.
-- Spoilage threshold: `pH >= 6.8` is labeled as spoiled.
-- Classifier: logistic regression uses G-channel only; random forest is included as an additional benchmark.
+- ingredient, amount, unit, and cost records
 
-## 6) Run Order
+## Analysis Rules Used In The Repo
 
-Use either the numbered scripts or the original runner scripts.
+- CV extraction uses unsupervised K-means and keeps the darker fiber cluster.
+- Tensile stress is computed automatically from diameter and breaking force.
+- Statistics include assumption checks before ANOVA interpretation.
+- The main calibration model is polynomial and the advanced layer adds a 4-parameter logistic fit.
+- Spoilage labeling uses `pH >= 6.8` as the spoiled threshold.
+- The core classifier uses logistic regression; the advanced layer adds an SVM surface.
 
-1. `python scripts/01_cv_extraction.py`
-2. `python scripts/02_biomechanics_anova.py`
-3. `python scripts/03_predictive_models.py`
-4. `python scripts/build_figures.py`
+## Run Order
 
-Equivalent legacy commands still work:
+```powershell
+python scripts/01_cv_extraction.py
+python scripts/02_biomechanics_anova.py
+python scripts/03_predictive_models.py
+python scripts/build_figures.py
+```
 
-1. `python scripts/run_cv_extraction.py`
-2. `python scripts/run_statistics.py`
-3. `python scripts/run_ml.py`
-4. `python scripts/build_figures.py`
+The `run_*` scripts are equivalent alternatives. `build_figures.py` also runs the advanced figure layer when the supporting advanced-analysis tables are present.
 
-## 7) Important Limitation
+## Important Limitation
 
-The scanned PDFs in [img/classification](c:/Users/dongz/OneDrive/Desktop/Project%20Code/PhytoFiber/img/classification) are not reliable structured datasets. They are useful as experimental records, but the pipeline does not invent numeric values from them. For publishable statistics, enter the real measurements into the CSV files above.
+The scanned PDFs in `img/classification/` are supporting records, not machine-readable datasets. The repo should only make statistical claims from the structured CSV measurements.
