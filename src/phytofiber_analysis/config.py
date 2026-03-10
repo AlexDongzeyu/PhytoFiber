@@ -47,6 +47,10 @@ BLAND_ALTMAN_CSV = DATA_PROCESSED_DIR / "bland_altman_points.csv"
 LATENCY_SUMMARY_CSV = DATA_PROCESSED_DIR / "latency_summary.csv"
 FORMULATION_RADAR_CSV = DATA_PROCESSED_DIR / "formulation_radar_scores.csv"
 SVM_PREDICTIONS_CSV = DATA_PROCESSED_DIR / "svm_predictions.csv"
+BAYESIAN_TENSILE_SUMMARY_CSV = DATA_PROCESSED_DIR / "bayesian_tensile_summary.csv"
+BAYESIAN_TENSILE_PAIRWISE_CSV = DATA_PROCESSED_DIR / "bayesian_tensile_pairwise.csv"
+BAYESIAN_LATENCY_SUMMARY_CSV = DATA_PROCESSED_DIR / "bayesian_latency_summary.csv"
+BAYESIAN_LATENCY_PAIRWISE_CSV = DATA_PROCESSED_DIR / "bayesian_latency_pairwise.csv"
 
 
 def first_existing_path(*paths: Path) -> Path:

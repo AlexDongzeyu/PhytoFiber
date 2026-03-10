@@ -61,12 +61,10 @@ Core processed outputs include:
 
 Core figures include:
 
-- `tensile_strength_boxplot.png`
 - `tensile_strength_violin.png`
 - `spoilage_regplot.png`
 - `calibration_curve.png`
 - `confusion_matrix_logistic.png`
-- `confusion_matrix_random_forest.png`
 - `roc_curve_logistic.png`
 - `predictive_analysis_dashboard.png`
 
@@ -74,11 +72,12 @@ Advanced figures generated when the extra tables are present include:
 
 - `weibull_probability_plot.png`
 - `tensile_raincloud.png`
+- `bayesian_tensile_forest.png`
+- `bayesian_tensile_superiority_heatmap.png`
 - `calibration_4pl_curve.png`
-- `spoilage_bland_altman.png`
-- `spoilage_svm_decision_surface.png`
 - `latency_raincloud.png`
-- `latency_barplot.png`
+- `bayesian_latency_forest.png`
+- `bayesian_latency_superiority_heatmap.png`
 - `stability_timeseries.png`
 - `digestibility_mass_loss.png`
 - `economics_breakdown.png`

@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from scipy.optimize import curve_fit
+from scipy.stats import t as student_t
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, precision_recall_fscore_support, roc_auc_score
 from sklearn.model_selection import StratifiedKFold, cross_val_predict
 from sklearn.pipeline import Pipeline
@@ -216,6 +217,85 @@ def summarize_latency(df: pd.DataFrame, group_col: str = "group", value_col: str
     out = out.rename(columns={group_col: "group", "count": "n"})
     out["sem"] = out["std"] / np.sqrt(out["n"])
     return out
+
+
+def estimate_bayesian_group_posteriors(
+    df: pd.DataFrame,
+    group_col: str,
+    value_col: str,
+    better_direction: str = "higher",
+    draws: int = 20000,
+    random_state: int = 42,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    work = df[[group_col, value_col]].dropna().copy()
+    work[value_col] = work[value_col].astype(float)
+    rng = np.random.default_rng(random_state)
+
+    posterior_samples: dict[str, np.ndarray] = {}
+    summary_rows: list[dict] = []
+    groups = list(pd.Series(work[group_col]).dropna().astype(str).unique())
+    for group_name in groups:
+        subset = work.loc[work[group_col].astype(str) == group_name, value_col].to_numpy(dtype=float)
+        n_obs = len(subset)
+        sample_mean = float(np.mean(subset))
+        sample_std = float(np.std(subset, ddof=1)) if n_obs > 1 else 0.0
+        if n_obs > 1 and sample_std > 0:
+            posterior = student_t.rvs(df=n_obs - 1, loc=sample_mean, scale=sample_std / np.sqrt(n_obs), size=draws, random_state=rng)
+        else:
+            posterior = np.full(draws, sample_mean, dtype=float)
+        posterior_samples[group_name] = posterior
+
+        lower, median, upper = np.quantile(posterior, [0.025, 0.5, 0.975])
+        summary_rows.append(
+            {
+                "group": group_name,
+                "n": int(n_obs),
+                "sample_mean": sample_mean,
+                "sample_std": sample_std,
+                "posterior_mean": float(np.mean(posterior)),
+                "posterior_median": float(median),
+                "ci_lower": float(lower),
+                "ci_upper": float(upper),
+            }
+        )
+
+    sample_matrix = np.vstack([posterior_samples[group_name] for group_name in groups])
+    if better_direction == "higher":
+        best_idx = np.argmax(sample_matrix, axis=0)
+    elif better_direction == "lower":
+        best_idx = np.argmin(sample_matrix, axis=0)
+    else:
+        raise ValueError("better_direction must be 'higher' or 'lower'.")
+
+    probability_best = {group_name: float(np.mean(best_idx == idx)) for idx, group_name in enumerate(groups)}
+    for row in summary_rows:
+        row["probability_best"] = probability_best[row["group"]]
+
+    pairwise_rows: list[dict] = []
+    for row_group in groups:
+        for col_group in groups:
+            row_posterior = posterior_samples[row_group]
+            col_posterior = posterior_samples[col_group]
+            difference = row_posterior - col_posterior
+            if row_group == col_group:
+                probability_row_better = 0.5
+            elif better_direction == "higher":
+                probability_row_better = float(np.mean(difference > 0))
+            else:
+                probability_row_better = float(np.mean(difference < 0))
+            diff_lower, diff_upper = np.quantile(difference, [0.025, 0.975])
+            pairwise_rows.append(
+                {
+                    "row_group": row_group,
+                    "col_group": col_group,
+                    "probability_row_better": probability_row_better,
+                    "mean_difference": float(np.mean(difference)),
+                    "difference_ci_lower": float(diff_lower),
+                    "difference_ci_upper": float(diff_upper),
+                }
+            )
+
+    return pd.DataFrame(summary_rows).sort_values("group").reset_index(drop=True), pd.DataFrame(pairwise_rows)
 
 
 def build_formulation_radar_scores(

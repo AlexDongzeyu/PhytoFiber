@@ -9,6 +9,7 @@ from phytofiber_analysis.advanced_analysis import (
     apply_4pl_calibration,
     build_formulation_radar_scores,
     compute_bland_altman,
+    estimate_bayesian_group_posteriors,
     fit_4pl_calibration,
     fit_svm_classifier,
     fit_weibull_reliability,
@@ -16,6 +17,10 @@ from phytofiber_analysis.advanced_analysis import (
 )
 from phytofiber_analysis.config import (
     ADVANCED_METRICS_JSON,
+    BAYESIAN_LATENCY_PAIRWISE_CSV,
+    BAYESIAN_LATENCY_SUMMARY_CSV,
+    BAYESIAN_TENSILE_PAIRWISE_CSV,
+    BAYESIAN_TENSILE_SUMMARY_CSV,
     BLAND_ALTMAN_CSV,
     CALIBRATION_4PL_JSON,
     CALIBRATION_4PL_PREDICTIONS_CSV,
@@ -40,14 +45,14 @@ from phytofiber_analysis.io_utils import choose_existing_file, maybe_rename_colu
 from phytofiber_analysis.statistical_tests import compute_group_descriptives, compute_tensile_stress
 from phytofiber_analysis.visualization import (
     save_4pl_calibration_plot,
+    save_bayesian_forest_plot,
     save_bland_altman_plot,
     save_digestibility_bars,
     save_economics_breakdown,
     save_formulation_radar,
-    save_latency_barplot,
     save_raincloud_plot,
     save_stability_timeseries,
-    save_svm_decision_surface,
+    save_superiority_heatmap,
     save_weibull_probability_plot,
 )
 
@@ -110,8 +115,16 @@ def main() -> None:
     tensile = _load_tensile()
     weibull_summary, weibull_points = fit_weibull_reliability(tensile, group_col="group", value_col="tensile_mpa")
     tensile_descriptives = compute_group_descriptives(tensile, group_col="group", value_col="tensile_mpa")
+    tensile_bayes_summary, tensile_bayes_pairwise = estimate_bayesian_group_posteriors(
+        tensile,
+        group_col="group",
+        value_col="tensile_mpa",
+        better_direction="higher",
+    )
     write_csv(weibull_summary, WEIBULL_SUMMARY_CSV)
     write_csv(weibull_points, WEIBULL_PLOT_CSV)
+    write_csv(tensile_bayes_summary, BAYESIAN_TENSILE_SUMMARY_CSV)
+    write_csv(tensile_bayes_pairwise, BAYESIAN_TENSILE_PAIRWISE_CSV)
 
     save_raincloud_plot(
         tensile,
@@ -122,6 +135,18 @@ def main() -> None:
         xlabel="Tensile Strength (MPa)",
     )
     save_weibull_probability_plot(weibull_points, weibull_summary, VIS_DIR / "weibull_probability_plot.png")
+    save_bayesian_forest_plot(
+        tensile_bayes_summary,
+        VIS_DIR / "bayesian_tensile_forest.png",
+        title="Bayesian Posterior Tensile Strength by Formulation",
+        xlabel="Posterior Median Tensile Strength (MPa)",
+    )
+    save_superiority_heatmap(
+        tensile_bayes_pairwise,
+        VIS_DIR / "bayesian_tensile_superiority_heatmap.png",
+        title="Bayesian Superiority Probability: Higher Tensile Strength",
+        better_label="P(row stronger than column)",
+    )
 
     calibration = _load_calibration_for_4pl()
     calibration_4pl_payload, calibration_4pl_predictions = fit_4pl_calibration(calibration, feature_col="G", target_col="pH")
@@ -133,16 +158,22 @@ def main() -> None:
     spoilage = apply_4pl_calibration(spoilage, calibration_4pl_payload, feature_col="G", out_col="predicted_pH_4pl")
     bland_altman_metrics, bland_altman_points = compute_bland_altman(spoilage, reference_col="meat_surface_ph", candidate_col="predicted_pH_4pl")
     write_csv(bland_altman_points, BLAND_ALTMAN_CSV)
-    save_bland_altman_plot(bland_altman_points, VIS_DIR / "spoilage_bland_altman.png", bland_altman_metrics)
 
     svm_metrics, svm_predictions, svm_model = fit_svm_classifier(spoilage, feature_cols=["time_h", "G"], target_col="target_spoiled")
     write_csv(svm_predictions, SVM_PREDICTIONS_CSV)
-    save_svm_decision_surface(svm_predictions, svm_model, VIS_DIR / "spoilage_svm_decision_surface.png", feature_cols=["time_h", "G"], target_col="target_spoiled")
 
     latency = pd.read_csv(LATENCY_CSV)
     latency = maybe_rename_columns(latency, {"Group": "group", "Response_Time_s": "response_time_s"})
     latency_summary = summarize_latency(latency, group_col="group", value_col="response_time_s")
+    latency_bayes_summary, latency_bayes_pairwise = estimate_bayesian_group_posteriors(
+        latency,
+        group_col="group",
+        value_col="response_time_s",
+        better_direction="lower",
+    )
     write_csv(latency_summary, LATENCY_SUMMARY_CSV)
+    write_csv(latency_bayes_summary, BAYESIAN_LATENCY_SUMMARY_CSV)
+    write_csv(latency_bayes_pairwise, BAYESIAN_LATENCY_PAIRWISE_CSV)
     save_raincloud_plot(
         latency,
         VIS_DIR / "latency_raincloud.png",
@@ -151,7 +182,18 @@ def main() -> None:
         title="Raincloud Plot of Halochromic Response Latency",
         xlabel="Response Time (s)",
     )
-    save_latency_barplot(latency_summary, VIS_DIR / "latency_barplot.png")
+    save_bayesian_forest_plot(
+        latency_bayes_summary,
+        VIS_DIR / "bayesian_latency_forest.png",
+        title="Bayesian Posterior Response Time by Formulation",
+        xlabel="Posterior Median Response Time (s)",
+    )
+    save_superiority_heatmap(
+        latency_bayes_pairwise,
+        VIS_DIR / "bayesian_latency_superiority_heatmap.png",
+        title="Bayesian Superiority Probability: Faster Response",
+        better_label="P(row faster than column)",
+    )
 
     stability = pd.read_csv(STABILITY_CSV)
     stability = maybe_rename_columns(stability, {"Time_Hours": "time_h"})
@@ -171,10 +213,18 @@ def main() -> None:
     write_json(
         {
             "weibull": weibull_summary.to_dict(orient="records"),
+            "bayesian_tensile": {
+                "summary": tensile_bayes_summary.to_dict(orient="records"),
+                "pairwise": tensile_bayes_pairwise.to_dict(orient="records"),
+            },
             "calibration_4pl": calibration_4pl_payload,
             "bland_altman": bland_altman_metrics,
             "svm": svm_metrics,
             "latency_summary": latency_summary.to_dict(orient="records"),
+            "bayesian_latency": {
+                "summary": latency_bayes_summary.to_dict(orient="records"),
+                "pairwise": latency_bayes_pairwise.to_dict(orient="records"),
+            },
             "cost_per_meter_usd": cost_per_meter,
             "radar_scores": radar_scores.to_dict(orient="records"),
         },

@@ -14,16 +14,20 @@ def set_publication_style() -> None:
         context="talk",
         style="whitegrid",
         rc={
-            "figure.facecolor": "#f7f3eb",
-            "axes.facecolor": "#fffaf2",
-            "axes.edgecolor": "#3a312a",
-            "axes.labelcolor": "#2b2521",
-            "text.color": "#2b2521",
-            "xtick.color": "#4f463f",
-            "ytick.color": "#4f463f",
-            "grid.color": "#d8cfc2",
+            "font.family": "DejaVu Serif",
+            "mathtext.fontset": "stix",
+            "figure.facecolor": "#f5f1e8",
+            "axes.facecolor": "#fffdf9",
+            "axes.edgecolor": "#2b2b2b",
+            "axes.labelcolor": "#202020",
+            "text.color": "#202020",
+            "xtick.color": "#4a4a4a",
+            "ytick.color": "#4a4a4a",
+            "grid.color": "#ddd6ca",
             "axes.titleweight": "bold",
             "font.size": 12,
+            "axes.titlepad": 14,
+            "grid.linewidth": 0.8,
         },
     )
 
@@ -69,6 +73,67 @@ def save_tensile_violinplot(df: pd.DataFrame, out_path: Path, anova_p: float | N
     if anova_p is not None:
         ax.text(0.02, 0.98, f"ANOVA p = {anova_p:.4f}", transform=ax.transAxes, ha="left", va="top", fontsize=11, bbox={"facecolor": "#fff6df", "edgecolor": "#d8cfc2", "boxstyle": "round,pad=0.35"})
     sns.despine(ax=ax)
+    _finish_figure(out_path)
+
+
+def save_bayesian_forest_plot(
+    df: pd.DataFrame,
+    out_path: Path,
+    title: str,
+    xlabel: str,
+) -> None:
+    set_publication_style()
+    work = df.sort_values("posterior_median", ascending=True).reset_index(drop=True)
+    plt.figure(figsize=(9.8, 6.6))
+    ax = plt.gca()
+    palette = sns.color_palette(["#1f4e5f", "#b46a28", "#6a8f3f", "#a3485b"], n_colors=len(work))
+    for idx, row in enumerate(work.itertuples(index=False)):
+        color = palette[idx]
+        ax.hlines(idx, row.ci_lower, row.ci_upper, color=color, linewidth=3.4, alpha=0.95)
+        ax.scatter(row.posterior_median, idx, s=160, color=color, edgecolor="white", linewidth=1.2, zorder=3)
+        ax.text(
+            row.ci_upper + (work["ci_upper"].max() - work["ci_lower"].min()) * 0.02,
+            idx,
+            f"P(best) = {row.probability_best:.2%}",
+            va="center",
+            fontsize=10.5,
+            color="#303030",
+        )
+    ax.set_yticks(range(len(work)))
+    ax.set_yticklabels([f"Group {group}" for group in work["group"]])
+    ax.set_xlabel(xlabel)
+    ax.set_title(title)
+    ax.grid(axis="x", alpha=0.45)
+    ax.grid(axis="y", visible=False)
+    sns.despine(ax=ax, left=False)
+    _finish_figure(out_path)
+
+
+def save_superiority_heatmap(
+    df: pd.DataFrame,
+    out_path: Path,
+    title: str,
+    better_label: str,
+) -> None:
+    set_publication_style()
+    matrix = df.pivot(index="row_group", columns="col_group", values="probability_row_better")
+    labels = matrix.apply(lambda column: column.map(lambda value: f"{value:.0%}"))
+    plt.figure(figsize=(7.4, 6.4))
+    ax = sns.heatmap(
+        matrix,
+        annot=labels,
+        fmt="",
+        cmap=sns.color_palette(["#8b2e3c", "#f6f2ea", "#2f6f4f"], as_cmap=True),
+        vmin=0,
+        vmax=1,
+        center=0.5,
+        linewidths=1.0,
+        linecolor="white",
+        cbar_kws={"label": better_label, "shrink": 0.85},
+    )
+    ax.set_title(title)
+    ax.set_xlabel("Compared Against")
+    ax.set_ylabel("Reference Group")
     _finish_figure(out_path)
 
 

@@ -15,15 +15,16 @@
 
 ## Figure deliverables
 
-- Violin plus swarm biomechanics plot
-- Calibration polynomial regression plot with confidence band
-- Dual-axis spoilage kinetics plot
-- Pearson correlation heatmap
-- Confusion matrix heatmap
-- ROC curve
+- Violin plus swarm biomechanics distribution plot
+- Bayesian tensile forest plot with 95% credible intervals
+- Bayesian superiority heatmap for formulation comparison
+- Calibration polynomial regression plot
+- 4-parameter logistic calibration figure
+- Logistic confusion matrix and ROC curve
+- Stability, digestibility, and economics summary figures
 
 ## Board and paper deliverables
 
-- Methods summary explaining K-means, ANOVA, and logistic regression
+- Methods summary explaining K-means, ANOVA, Weibull reliability, and Bayesian posterior comparison
 - QR-linkable GitHub repository
 - Printed high-resolution figures at `dpi=300` or higher

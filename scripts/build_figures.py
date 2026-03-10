@@ -16,7 +16,6 @@ from phytofiber_analysis.visualization import (
     save_dual_axis_spoilage_plot,
     save_roc_curve,
     save_spoilage_regplot,
-    save_tensile_boxplot,
     save_tensile_violinplot,
 )
 
@@ -58,7 +57,6 @@ def main() -> None:
         with PEARSON_RESULTS_JSON.open("r", encoding="utf-8") as handle:
             pearson_r = json.load(handle).get("pearson_r")
 
-    save_tensile_boxplot(tensile, VIS_DIR / "tensile_strength_boxplot.png", anova_p=anova_p)
     save_tensile_violinplot(tensile, VIS_DIR / "tensile_strength_violin.png", anova_p=anova_p)
     save_spoilage_regplot(spoilage, VIS_DIR / "spoilage_regplot.png", threshold=6.8, pearson_r=pearson_r)
     if {"time_h", "meat_surface_ph", "G"}.issubset(spoilage.columns):
@@ -84,13 +82,6 @@ def main() -> None:
             logistic_cm,
             title="Confusion Matrix (Logistic Regression)",
             out_path=VIS_DIR / "confusion_matrix_logistic.png",
-        )
-    if rf_cm_path.exists():
-        rf_cm = pd.read_csv(rf_cm_path)
-        save_confusion_matrix_heatmap(
-            rf_cm,
-            title="Confusion Matrix (Random Forest)",
-            out_path=VIS_DIR / "confusion_matrix_random_forest.png",
         )
 
     if CLASSIFIER_PREDICTIONS_CSV.exists():
