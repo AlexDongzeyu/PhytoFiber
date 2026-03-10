@@ -19,6 +19,8 @@ STABILITY_CSV = DATA_RAW_DIR / "stability_data.csv"
 SPOILAGE_CSV = DATA_RAW_DIR / "spoilage_data.csv"
 SPOILAGE_RAW_CSV = DATA_RAW_DIR / "spoilage_raw.csv"
 SPOILAGE_IMAGE_DIR = DATA_RAW_DIR / "spoilage_images"
+DIGESTIBILITY_CSV = DATA_RAW_DIR / "digestibility_data.csv"
+ECONOMICS_CSV = DATA_RAW_DIR / "economics_data.csv"
 
 # Common generated files
 CV_EXTRACTED_CSV = DATA_PROCESSED_DIR / "cv_extracted_spoilage.csv"
@@ -35,6 +37,16 @@ ANOVA_RESULTS_CSV = DATA_PROCESSED_DIR / "anova_results.csv"
 TUKEY_RESULTS_CSV = DATA_PROCESSED_DIR / "tukey_results.csv"
 ML_METRICS_JSON = DATA_PROCESSED_DIR / "ml_metrics.json"
 MODEL_COMPARISON_CSV = DATA_PROCESSED_DIR / "model_comparison.csv"
+CLASSIFIER_PREDICTIONS_CSV = DATA_PROCESSED_DIR / "classifier_predictions.csv"
+ADVANCED_METRICS_JSON = DATA_PROCESSED_DIR / "advanced_metrics.json"
+WEIBULL_SUMMARY_CSV = DATA_PROCESSED_DIR / "weibull_summary.csv"
+WEIBULL_PLOT_CSV = DATA_PROCESSED_DIR / "weibull_probability_points.csv"
+CALIBRATION_4PL_JSON = DATA_PROCESSED_DIR / "calibration_4pl_model.json"
+CALIBRATION_4PL_PREDICTIONS_CSV = DATA_PROCESSED_DIR / "calibration_4pl_predictions.csv"
+BLAND_ALTMAN_CSV = DATA_PROCESSED_DIR / "bland_altman_points.csv"
+LATENCY_SUMMARY_CSV = DATA_PROCESSED_DIR / "latency_summary.csv"
+FORMULATION_RADAR_CSV = DATA_PROCESSED_DIR / "formulation_radar_scores.csv"
+SVM_PREDICTIONS_CSV = DATA_PROCESSED_DIR / "svm_predictions.csv"
 
 
 def first_existing_path(*paths: Path) -> Path:

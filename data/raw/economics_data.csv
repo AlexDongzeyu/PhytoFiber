@@ -1,0 +1,6 @@
+batch_id,ingredient,cost_usd,amount_used,unit,notes
+B01,sodium_alginate,0.15,2.0,g,
+B01,corn_husk_feedstock,0.00,10.0,g,Upcycled waste
+B01,anthocyanin_source,0.05,6.0,mL,
+B01,calcium_chloride,0.10,5.0,g,
+B01,total_fiber_length_m,0.30,15.0,m,Total batch cost $0.30 yields 15m ($0.02/m)

@@ -1,0 +1,11 @@
+sample_id,treatment,time_h,R,G,B,color_retention_pct,notes
+ST01,control,0,150,95,180,100,
+ST02,treated,0,150,95,180,100,
+ST03,control,24,170,130,190,85,Fading visible
+ST04,treated,24,152,97,182,98,
+ST05,control,72,200,180,210,60,
+ST06,treated,72,155,102,185,95,
+ST07,control,120,230,220,235,40,
+ST08,treated,120,160,107,188,92,
+ST09,control,168,245,240,245,25,Severe degradation (almost clear)
+ST10,treated,168,165,112,190,90,Color locked

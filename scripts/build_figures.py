@@ -6,15 +6,34 @@ import pandas as pd
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
-from phytofiber_analysis.config import CALIBRATION_MODEL_JSON, CALIBRATION_PREDICTIONS_CSV, DATA_PROCESSED_DIR, ML_METRICS_JSON, PEARSON_RESULTS_JSON, SPOILAGE_LABELED_CSV, TENSILE_PROCESSED_CSV, VIS_DIR
+from phytofiber_analysis.config import CALIBRATION_MODEL_JSON, CALIBRATION_PREDICTIONS_CSV, CLASSIFIER_PREDICTIONS_CSV, DATA_PROCESSED_DIR, DIGESTIBILITY_CSV, ECONOMICS_CSV, LATENCY_CSV, PEARSON_RESULTS_JSON, SPOILAGE_LABELED_CSV, STABILITY_CSV, TENSILE_PROCESSED_CSV, VIS_DIR
 from phytofiber_analysis.io_utils import read_csv_checked
 from phytofiber_analysis.visualization import (
     save_analysis_dashboard,
     save_calibration_curve,
     save_confusion_matrix_heatmap,
+    save_correlation_heatmap,
+    save_dual_axis_spoilage_plot,
+    save_roc_curve,
     save_spoilage_regplot,
     save_tensile_boxplot,
+    save_tensile_violinplot,
 )
+
+
+def _run_advanced_outputs_if_available() -> bool:
+    required_tables = [LATENCY_CSV, STABILITY_CSV, DIGESTIBILITY_CSV, ECONOMICS_CSV]
+    if not all(path.exists() for path in required_tables):
+        return False
+
+    try:
+        from run_advanced_analysis import main as run_advanced_analysis_main
+
+        run_advanced_analysis_main()
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"Skipped advanced figure build: {exc}")
+        return False
+    return True
 
 
 def main() -> None:
@@ -40,7 +59,13 @@ def main() -> None:
             pearson_r = json.load(handle).get("pearson_r")
 
     save_tensile_boxplot(tensile, VIS_DIR / "tensile_strength_boxplot.png", anova_p=anova_p)
+    save_tensile_violinplot(tensile, VIS_DIR / "tensile_strength_violin.png", anova_p=anova_p)
     save_spoilage_regplot(spoilage, VIS_DIR / "spoilage_regplot.png", threshold=6.8, pearson_r=pearson_r)
+    if {"time_h", "meat_surface_ph", "G"}.issubset(spoilage.columns):
+        dual_axis_ready = spoilage.dropna(subset=["time_h", "meat_surface_ph", "G"])
+        if not dual_axis_ready.empty:
+            save_dual_axis_spoilage_plot(dual_axis_ready, VIS_DIR / "spoilage_dual_axis.png")
+            save_correlation_heatmap(dual_axis_ready, VIS_DIR / "spoilage_correlation_heatmap.png", cols=["time_h", "meat_surface_ph", "G"])
 
     if CALIBRATION_PREDICTIONS_CSV.exists():
         calibration = read_csv_checked(CALIBRATION_PREDICTIONS_CSV, required_columns=["pH", "G", "predicted_pH"])
@@ -68,6 +93,11 @@ def main() -> None:
             out_path=VIS_DIR / "confusion_matrix_random_forest.png",
         )
 
+    if CLASSIFIER_PREDICTIONS_CSV.exists():
+        predictions = pd.read_csv(CLASSIFIER_PREDICTIONS_CSV)
+        if not predictions.empty and "y_proba" in predictions.columns:
+            save_roc_curve(predictions, VIS_DIR / "roc_curve_logistic.png", model_type="logistic")
+
     if (DATA_PROCESSED_DIR / "model_comparison.csv").exists():
         comparison = pd.read_csv(DATA_PROCESSED_DIR / "model_comparison.csv")
         if not comparison.empty:
@@ -77,7 +107,12 @@ def main() -> None:
                 out_path=VIS_DIR / "predictive_analysis_dashboard.png",
                 pearson_r=pearson_r,
             )
-    print("Saved board-ready figures to visualizations/")
+
+    built_advanced = _run_advanced_outputs_if_available()
+    if built_advanced:
+        print("Saved core and advanced figures to visualizations/")
+    else:
+        print("Saved board-ready figures to visualizations/")
 
 
 if __name__ == "__main__":

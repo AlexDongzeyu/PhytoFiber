@@ -88,7 +88,7 @@ def evaluate_classifier(
     target_col: str = "target_spoiled",
     model_type: str = "logistic",
     random_state: int = 42,
-) -> tuple[dict, pd.DataFrame]:
+) -> tuple[dict, pd.DataFrame, pd.DataFrame]:
     work = df.dropna(subset=feature_cols + [target_col]).copy()
     X = work[feature_cols].astype(float).values
     y = work[target_col].astype(int).values
@@ -122,6 +122,7 @@ def evaluate_classifier(
     cm = confusion_matrix(y, y_pred)
 
     roc_auc = float("nan")
+    y_proba = None
     if hasattr(model, "predict_proba"):
         y_proba = cross_val_predict(model, X, y, cv=cv, method="predict_proba")[:, 1]
         roc_auc = roc_auc_score(y, y_proba)
@@ -145,5 +146,10 @@ def evaluate_classifier(
         index=["actual_safe", "actual_spoiled"],
         columns=["pred_safe", "pred_spoiled"],
     ).reset_index(names="actual")
-    return metrics, cm_df
+    prediction_df = work.copy().reset_index(drop=True)
+    prediction_df["model_type"] = model_type
+    prediction_df["y_true"] = y
+    prediction_df["y_pred"] = y_pred
+    prediction_df["y_proba"] = y_proba if y_proba is not None else np.nan
+    return metrics, cm_df, prediction_df
 

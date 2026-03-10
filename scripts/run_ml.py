@@ -5,7 +5,7 @@ import pandas as pd
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
-from phytofiber_analysis.config import CALIBRATION_CSV, CALIBRATION_MODEL_JSON, CALIBRATION_PREDICTIONS_CSV, CALIBRATION_RAW_CSV, COLOR_DATA_FINAL_CSV, CV_EXTRACTED_CSV, DATA_PROCESSED_DIR, ML_METRICS_JSON, MODEL_COMPARISON_CSV, PEARSON_RESULTS_JSON, SPOILAGE_CSV, SPOILAGE_LABELED_CSV, SPOILAGE_RAW_CSV
+from phytofiber_analysis.config import CALIBRATION_CSV, CALIBRATION_MODEL_JSON, CALIBRATION_PREDICTIONS_CSV, CALIBRATION_RAW_CSV, CLASSIFIER_PREDICTIONS_CSV, COLOR_DATA_FINAL_CSV, CV_EXTRACTED_CSV, DATA_PROCESSED_DIR, ML_METRICS_JSON, MODEL_COMPARISON_CSV, PEARSON_RESULTS_JSON, SPOILAGE_CSV, SPOILAGE_LABELED_CSV, SPOILAGE_RAW_CSV
 from phytofiber_analysis.io_utils import choose_existing_file, maybe_rename_columns, read_csv_checked, write_csv, write_json
 from phytofiber_analysis.ml_prediction import evaluate_classifier, fit_polynomial_calibration, prepare_spoilage_labels, run_pearson_correlation
 
@@ -73,7 +73,14 @@ def main() -> None:
         write_csv(calibration_predictions, CALIBRATION_PREDICTIONS_CSV)
 
     join_cols = []
-    if {"sample_id", "time_h"}.issubset(spoilage.columns) and {"sample_id", "time_h"}.issubset(rgb.columns):
+    has_spoilage_sample_time = {"sample_id", "time_h"}.issubset(spoilage.columns)
+    has_rgb_sample_time = {"sample_id", "time_h"}.issubset(rgb.columns)
+    rgb_has_populated_sample_time = False
+    if has_rgb_sample_time:
+        rgb_sample_id = rgb["sample_id"].fillna("").astype(str).str.strip()
+        rgb_has_populated_sample_time = rgb_sample_id.ne("").any() and rgb["time_h"].notna().any()
+
+    if has_spoilage_sample_time and has_rgb_sample_time and rgb_has_populated_sample_time:
         spoilage["sample_id"] = spoilage["sample_id"].fillna("").astype(str).str.strip()
         rgb["sample_id"] = rgb["sample_id"].fillna("").astype(str).str.strip()
         spoilage["time_h"] = spoilage["time_h"].astype(float)
@@ -96,10 +103,10 @@ def main() -> None:
     pearson_payload = run_pearson_correlation(labeled, x_col="G", y_col="meat_surface_ph")
 
     feature_cols = ["G"]
-    logistic_metrics, logistic_cm = evaluate_classifier(
+    logistic_metrics, logistic_cm, logistic_predictions = evaluate_classifier(
         labeled, feature_cols=feature_cols, model_type="logistic"
     )
-    rf_metrics, rf_cm = evaluate_classifier(
+    rf_metrics, rf_cm, rf_predictions = evaluate_classifier(
         labeled, feature_cols=["R", "G", "B"], model_type="random_forest"
     )
 
@@ -109,6 +116,7 @@ def main() -> None:
     write_csv(labeled, SPOILAGE_LABELED_CSV)
     write_csv(logistic_cm, DATA_PROCESSED_DIR / "confusion_matrix_logistic.csv")
     write_csv(rf_cm, DATA_PROCESSED_DIR / "confusion_matrix_random_forest.csv")
+    write_csv(pd.concat([logistic_predictions, rf_predictions], ignore_index=True), CLASSIFIER_PREDICTIONS_CSV)
     write_csv(comparison, MODEL_COMPARISON_CSV)
     write_json(pearson_payload, PEARSON_RESULTS_JSON)
     write_json(

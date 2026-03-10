@@ -1,0 +1,5 @@
+sample_id,phase,initial_mass_g,final_mass_g,mass_loss_pct,structure_status,notes
+D01,stomach_pH2,0.100,0.096,4.0,intact,Survives gastric phase
+D02,stomach_pH2,0.100,0.095,5.0,intact,
+D03,intestine_pH8,0.100,0.002,98.0,dissolved,Complete fragmentation
+D04,intestine_pH8,0.100,0.001,99.0,dissolved,

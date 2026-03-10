@@ -1,6 +1,6 @@
 pH_Level,Image_Filename,notes
-2,,vinegar
-4,,dilute_vinegar
-6,,distilled_water
-8,,dilute_baking_soda
-10,,ammonia
+2,pH2.jpg,vinegar
+4,pH4.jpg,dilute_vinegar
+6,pH6.jpg,distilled_water
+8,pH8.jpg,dilute_baking_soda
+10,pH10.jpg,ammonia
