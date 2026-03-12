@@ -100,7 +100,22 @@ def _load_spoilage_for_advanced() -> pd.DataFrame:
     return spoilage
 
 
+def _load_economics() -> pd.DataFrame:
+    economics = pd.read_csv(ECONOMICS_CSV)
+    economics = maybe_rename_columns(economics, {"industrial_cost_usd": "cost_usd"})
+    required = ["ingredient", "cost_usd", "amount_used"]
+    missing = [col for col in required if col not in economics.columns]
+    if missing:
+        raise ValueError(f"Economics file is missing required columns: {missing}")
+    economics["cost_usd"] = economics["cost_usd"].astype(float)
+    economics["amount_used"] = economics["amount_used"].astype(float)
+    return economics
+
+
 def _compute_cost_per_meter(economics: pd.DataFrame) -> float:
+    final_row = economics[economics["ingredient"] == "final_cost_per_meter"]
+    if not final_row.empty:
+        return float(final_row["cost_usd"].iloc[0])
     length_row = economics[economics["ingredient"] == "total_fiber_length_m"]
     if length_row.empty:
         total_cost = float(economics["cost_usd"].sum())
@@ -202,7 +217,7 @@ def main() -> None:
     digestibility = pd.read_csv(DIGESTIBILITY_CSV)
     save_digestibility_bars(digestibility, VIS_DIR / "digestibility_mass_loss.png")
 
-    economics = pd.read_csv(ECONOMICS_CSV)
+    economics = _load_economics()
     cost_per_meter = _compute_cost_per_meter(economics)
     save_economics_breakdown(economics, VIS_DIR / "economics_breakdown.png", cost_per_meter=cost_per_meter)
 

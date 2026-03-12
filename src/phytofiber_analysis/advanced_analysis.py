@@ -2,9 +2,11 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import curve_fit
 from scipy.stats import t as student_t
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, precision_recall_fscore_support, roc_auc_score
 from sklearn.model_selection import StratifiedKFold, cross_val_predict
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import PolynomialFeatures
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
@@ -296,6 +298,138 @@ def estimate_bayesian_group_posteriors(
             )
 
     return pd.DataFrame(summary_rows).sort_values("group").reset_index(drop=True), pd.DataFrame(pairwise_rows)
+
+
+def simulate_tensile_monte_carlo(
+    df: pd.DataFrame,
+    group_col: str = "group",
+    value_col: str = "tensile_mpa",
+    draws_per_group: int = 1000,
+    random_state: int = 42,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    work = df[[group_col, value_col]].dropna().copy()
+    work[value_col] = work[value_col].astype(float)
+    rng = np.random.default_rng(random_state)
+
+    simulated_rows: list[dict] = []
+    summary_rows: list[dict] = []
+    for group_name, subset in work.groupby(group_col):
+        group_values = subset[value_col].to_numpy(dtype=float)
+        mean_value = float(np.mean(group_values))
+        std_value = float(np.std(group_values, ddof=1)) if len(group_values) > 1 else 0.0
+        effective_std = std_value if std_value > 0 else max(abs(mean_value) * 0.02, 0.01)
+        simulated = rng.normal(loc=mean_value, scale=effective_std, size=draws_per_group)
+        simulated = np.clip(simulated, a_min=0.01, a_max=None)
+
+        summary_rows.append(
+            {
+                "group": str(group_name),
+                "observed_n": int(len(group_values)),
+                "simulated_n": int(draws_per_group),
+                "observed_mean": mean_value,
+                "observed_std": std_value,
+                "simulated_mean": float(np.mean(simulated)),
+                "simulated_std": float(np.std(simulated, ddof=1)),
+            }
+        )
+
+        for idx, value in enumerate(simulated, start=1):
+            simulated_rows.append(
+                {
+                    "group": str(group_name),
+                    "simulation_id": idx,
+                    value_col: float(value),
+                    "source": "monte_carlo",
+                }
+            )
+
+    return pd.DataFrame(simulated_rows), pd.DataFrame(summary_rows)
+
+
+def simulate_spoilage_monte_carlo(
+    df: pd.DataFrame,
+    time_col: str = "time_h",
+    ph_col: str = "meat_surface_ph",
+    signal_col: str = "G",
+    draws: int = 1000,
+    random_state: int = 42,
+) -> tuple[pd.DataFrame, dict]:
+    work = df[[time_col, ph_col, signal_col]].dropna().copy()
+    work[time_col] = work[time_col].astype(float)
+    work[ph_col] = work[ph_col].astype(float)
+    work[signal_col] = work[signal_col].astype(float)
+    if len(work) < 3:
+        raise ValueError("Monte Carlo spoilage simulation requires at least three observed rows.")
+
+    observed = work[[time_col, ph_col, signal_col]].to_numpy(dtype=float)
+    means = observed.mean(axis=0)
+    covariance = np.cov(observed, rowvar=False)
+    covariance = covariance + np.eye(covariance.shape[0]) * 1e-6
+
+    rng = np.random.default_rng(random_state)
+    simulated = rng.multivariate_normal(mean=means, cov=covariance, size=draws)
+    sim_df = pd.DataFrame(simulated, columns=[time_col, ph_col, signal_col])
+    for column in [time_col, ph_col, signal_col]:
+        lower = float(work[column].min())
+        upper = float(work[column].max())
+        sim_df[column] = sim_df[column].clip(lower=lower, upper=upper)
+
+    sim_df["source"] = "monte_carlo"
+    payload = {
+        "draws": int(draws),
+        "observed_n": int(len(work)),
+        "means": {
+            time_col: float(means[0]),
+            ph_col: float(means[1]),
+            signal_col: float(means[2]),
+        },
+        "covariance": covariance.round(6).tolist(),
+    }
+    return sim_df, payload
+
+
+def fit_spoilage_response_surface(
+    df: pd.DataFrame,
+    time_col: str = "time_h",
+    ph_col: str = "meat_surface_ph",
+    signal_col: str = "G",
+    grid_size: int = 60,
+) -> tuple[dict, pd.DataFrame]:
+    work = df[[time_col, ph_col, signal_col]].dropna().copy()
+    work[time_col] = work[time_col].astype(float)
+    work[ph_col] = work[ph_col].astype(float)
+    work[signal_col] = work[signal_col].astype(float)
+    if len(work) < 4:
+        raise ValueError("Response surface fitting requires at least four observed rows.")
+
+    X = work[[time_col, ph_col]].to_numpy(dtype=float)
+    y = work[signal_col].to_numpy(dtype=float)
+    features = PolynomialFeatures(degree=2, include_bias=False)
+    X_poly = features.fit_transform(X)
+    model = LinearRegression()
+    model.fit(X_poly, y)
+    r_squared = float(model.score(X_poly, y))
+
+    time_grid = np.linspace(work[time_col].min(), work[time_col].max(), grid_size)
+    ph_grid = np.linspace(work[ph_col].min(), work[ph_col].max(), grid_size)
+    mesh_time, mesh_ph = np.meshgrid(time_grid, ph_grid)
+    grid_points = np.column_stack([mesh_time.ravel(), mesh_ph.ravel()])
+    grid_signal = model.predict(features.transform(grid_points))
+    surface_df = pd.DataFrame(
+        {
+            time_col: mesh_time.ravel(),
+            ph_col: mesh_ph.ravel(),
+            signal_col: grid_signal,
+        }
+    )
+    payload = {
+        "grid_size": int(grid_size),
+        "r2": r_squared,
+        "intercept": float(model.intercept_),
+        "feature_names": features.get_feature_names_out([time_col, ph_col]).tolist(),
+        "coefficients": model.coef_.astype(float).tolist(),
+    }
+    return payload, surface_df
 
 
 def build_formulation_radar_scores(

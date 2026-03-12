@@ -51,6 +51,10 @@ BAYESIAN_TENSILE_SUMMARY_CSV = DATA_PROCESSED_DIR / "bayesian_tensile_summary.cs
 BAYESIAN_TENSILE_PAIRWISE_CSV = DATA_PROCESSED_DIR / "bayesian_tensile_pairwise.csv"
 BAYESIAN_LATENCY_SUMMARY_CSV = DATA_PROCESSED_DIR / "bayesian_latency_summary.csv"
 BAYESIAN_LATENCY_PAIRWISE_CSV = DATA_PROCESSED_DIR / "bayesian_latency_pairwise.csv"
+AUGMENTED_TENSILE_CSV = DATA_PROCESSED_DIR / "augmented_tensile_monte_carlo.csv"
+AUGMENTED_TENSILE_SUMMARY_CSV = DATA_PROCESSED_DIR / "augmented_tensile_summary.csv"
+AUGMENTED_SPOILAGE_CSV = DATA_PROCESSED_DIR / "augmented_spoilage_monte_carlo.csv"
+AUGMENTATION_SUMMARY_JSON = DATA_PROCESSED_DIR / "augmentation_summary.json"
 
 
 def first_existing_path(*paths: Path) -> Path:

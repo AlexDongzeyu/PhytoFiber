@@ -5,13 +5,24 @@ import numpy as np
 import seaborn as sns
 import pandas as pd
 from matplotlib.collections import PolyCollection
+from matplotlib.colors import LinearSegmentedColormap, ListedColormap
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 from sklearn.metrics import auc, roc_curve
+
+
+GROUP_PALETTE = ["#244c5a", "#d17a22", "#7a9e48", "#b64d6b"]
+SAFE_COLOR = "#2f7d32"
+SAFE_FILL = "#dfeedd"
+SPOILED_COLOR = "#b53737"
+SPOILED_FILL = "#f7d9d3"
+DISCLOSURE_TEXT = "In-Silico Visualization: Augmented via Monte Carlo (n=1000) based on physical sample variance (n=15)."
 
 
 def set_publication_style() -> None:
     plt.style.use("seaborn-v0_8-whitegrid")
     sns.set_theme(
         context="talk",
+        font_scale=1.28,
         style="whitegrid",
         rc={
             "font.family": "DejaVu Serif",
@@ -25,10 +36,44 @@ def set_publication_style() -> None:
             "ytick.color": "#4a4a4a",
             "grid.color": "#ddd6ca",
             "axes.titleweight": "bold",
-            "font.size": 12,
+            "font.size": 13,
             "axes.titlepad": 14,
+            "axes.titlesize": 18,
+            "axes.labelsize": 15,
+            "xtick.labelsize": 12.5,
+            "ytick.labelsize": 12.5,
+            "legend.fontsize": 11.5,
             "grid.linewidth": 0.8,
         },
+    )
+
+
+def _add_axis_note(ax, note: str, *, x: float = 0.02, y: float = 0.02, fontsize: float = 10.5) -> None:
+    ax.text(
+        x,
+        y,
+        note,
+        transform=ax.transAxes,
+        ha="left",
+        va="bottom",
+        fontsize=fontsize,
+        fontstyle="italic",
+        color="#3d342d",
+        bbox={"facecolor": "#fffaf2", "edgecolor": "#d8cfc2", "boxstyle": "round,pad=0.35", "alpha": 0.96},
+    )
+
+
+def _add_figure_note(fig, note: str, *, y: float = 0.02, fontsize: float = 10.5) -> None:
+    fig.text(
+        0.02,
+        y,
+        note,
+        ha="left",
+        va="bottom",
+        fontsize=fontsize,
+        fontstyle="italic",
+        color="#3d342d",
+        bbox={"facecolor": "#fffaf2", "edgecolor": "#d8cfc2", "boxstyle": "round,pad=0.35", "alpha": 0.96},
     )
 
 
@@ -43,7 +88,7 @@ def save_tensile_boxplot(df: pd.DataFrame, out_path: Path, anova_p: float | None
     set_publication_style()
     plt.figure(figsize=(9, 6.5))
     order = list(pd.Series(df["group"]).dropna().astype(str).unique())
-    palette = ["#244c5a", "#d17a22", "#7a9e48"][: len(order)]
+    palette = GROUP_PALETTE[: len(order)]
     ax = sns.boxplot(data=df, x="group", y="tensile_mpa", hue="group", width=0.55, order=order, palette=palette, linewidth=1.5, dodge=False, legend=False)
     sns.swarmplot(data=df, x="group", y="tensile_mpa", order=order, color="#1f1f1f", size=6, alpha=0.85)
     means = df.groupby("group")["tensile_mpa"].mean().reindex(order)
@@ -62,7 +107,7 @@ def save_tensile_violinplot(df: pd.DataFrame, out_path: Path, anova_p: float | N
     set_publication_style()
     plt.figure(figsize=(9.4, 6.8))
     order = list(pd.Series(df["group"]).dropna().astype(str).unique())
-    palette = ["#244c5a", "#d17a22", "#7a9e48"][: len(order)]
+    palette = GROUP_PALETTE[: len(order)]
     ax = sns.violinplot(data=df, x="group", y="tensile_mpa", hue="group", order=order, palette=palette, inner=None, linewidth=1.4, cut=0, legend=False)
     sns.swarmplot(data=df, x="group", y="tensile_mpa", order=order, color="#111111", size=5.6, alpha=0.9)
     means = df.groupby("group")["tensile_mpa"].mean().reindex(order)
@@ -148,10 +193,16 @@ def save_spoilage_regplot(df: pd.DataFrame, out_path: Path, threshold: float = 6
         scatter_kws={"s": 80, "alpha": 0.85, "color": "#244c5a", "edgecolor": "white", "linewidths": 0.6},
         line_kws={"linewidth": 2.8, "color": "#9a1f40"},
     )
+    y_min = float(df["meat_surface_ph"].min()) - 0.1
+    y_max = float(df["meat_surface_ph"].max()) + 0.1
+    ax.axhspan(y_min, threshold, color=SAFE_FILL, alpha=0.45, zorder=0)
+    ax.axhspan(threshold, y_max, color=SPOILED_FILL, alpha=0.38, zorder=0)
     plt.xlabel("Fiber Green Channel Intensity")
     plt.ylabel("Meat Surface pH")
     plt.title("Real-World Spoilage Signal: Fiber Color vs Chicken pH")
-    plt.axhline(threshold, linestyle="--", linewidth=1.4, color="#d34d4d", alpha=0.9, label=f"Spoilage threshold pH {threshold:.1f}")
+    plt.axhline(threshold, linestyle="--", linewidth=1.6, color=SPOILED_COLOR, alpha=0.9, label=f"Spoilage threshold pH {threshold:.1f}")
+    ax.text(0.98, 0.10, "Safe zone", transform=ax.transAxes, ha="right", va="bottom", color=SAFE_COLOR, fontsize=11.5, fontweight="bold")
+    ax.text(0.98, 0.92, "Spoilage zone", transform=ax.transAxes, ha="right", va="top", color=SPOILED_COLOR, fontsize=11.5, fontweight="bold")
     if pearson_r is not None:
         ax.text(0.02, 0.98, f"Pearson r = {pearson_r:.3f}", transform=ax.transAxes, ha="left", va="top", fontsize=11, bbox={"facecolor": "#fff6df", "edgecolor": "#d8cfc2", "boxstyle": "round,pad=0.35"})
     plt.legend(frameon=False)
@@ -180,10 +231,11 @@ def save_confusion_matrix_heatmap(cm_df: pd.DataFrame, title: str, out_path: Pat
     set_publication_style()
     plt.figure(figsize=(6.5, 5.5))
     matrix = cm_df.set_index("actual").loc[["actual_safe", "actual_spoiled"], ["pred_safe", "pred_spoiled"]]
-    ax = sns.heatmap(matrix, annot=True, fmt="g", cmap="YlOrBr", cbar=False, linewidths=1.0, linecolor="white", annot_kws={"fontsize": 14, "fontweight": "bold"})
+    cmap = LinearSegmentedColormap.from_list("safe_spoilage", ["#fffaf2", SAFE_FILL, SAFE_COLOR])
+    ax = sns.heatmap(matrix, annot=True, fmt="g", cmap=cmap, cbar=False, linewidths=1.0, linecolor="white", annot_kws={"fontsize": 14, "fontweight": "bold"})
     plt.title(title)
-    plt.xlabel("Predicted Class")
-    plt.ylabel("Actual Class")
+    plt.xlabel("Predicted Class (safe shown first)")
+    plt.ylabel("Actual Class (safe shown first)")
     sns.despine(ax=ax, left=True, bottom=True)
     _finish_figure(out_path)
 
@@ -207,15 +259,21 @@ def save_analysis_dashboard(
         line_kws={"linewidth": 2.6, "color": "#9a1f40"},
         ax=ax_left,
     )
-    ax_left.axhline(6.8, linestyle="--", linewidth=1.3, color="#d34d4d")
+    left_y_min = float(spoilage_df["meat_surface_ph"].min()) - 0.1
+    left_y_max = float(spoilage_df["meat_surface_ph"].max()) + 0.1
+    ax_left.axhspan(left_y_min, 6.8, color=SAFE_FILL, alpha=0.45, zorder=0)
+    ax_left.axhspan(6.8, left_y_max, color=SPOILED_FILL, alpha=0.38, zorder=0)
+    ax_left.axhline(6.8, linestyle="--", linewidth=1.4, color=SPOILED_COLOR)
     ax_left.set_title("Chicken Spoilage Signal")
     ax_left.set_xlabel("Fiber G-channel")
     ax_left.set_ylabel("Meat pH")
+    ax_left.text(0.98, 0.10, "Safe zone", transform=ax_left.transAxes, ha="right", va="bottom", color=SAFE_COLOR, fontsize=10.8, fontweight="bold")
+    ax_left.text(0.98, 0.92, "Spoilage zone", transform=ax_left.transAxes, ha="right", va="top", color=SPOILED_COLOR, fontsize=10.8, fontweight="bold")
     if pearson_r is not None:
         ax_left.text(0.03, 0.96, f"r = {pearson_r:.3f}", transform=ax_left.transAxes, ha="left", va="top", fontsize=11, bbox={"facecolor": "#fff6df", "edgecolor": "#d8cfc2", "boxstyle": "round,pad=0.35"})
 
     model_order = comparison_df.sort_values("accuracy", ascending=True)
-    ax_right.barh(model_order["model_type"], model_order["accuracy"], color=["#7a9e48", "#d17a22"][: len(model_order)])
+    ax_right.barh(model_order["model_type"], model_order["accuracy"], color=[SAFE_COLOR, "#d17a22"][: len(model_order)])
     for idx, (_, row) in enumerate(model_order.iterrows()):
         ax_right.text(row["accuracy"] + 0.01, idx, f"{row['accuracy']:.2%}", va="center", fontsize=11)
     ax_right.set_xlim(0, min(1.0, max(0.1, model_order["accuracy"].max() + 0.15)))
@@ -292,11 +350,12 @@ def save_raincloud_plot(
     value_col: str,
     title: str,
     xlabel: str,
+    disclosure_note: str | None = None,
 ) -> None:
     set_publication_style()
     plt.figure(figsize=(10.5, 6.8))
     order = list(pd.Series(df[group_col]).dropna().astype(str).unique())
-    palette = ["#244c5a", "#d17a22", "#7a9e48", "#b64d6b"][: len(order)]
+    palette = GROUP_PALETTE[: len(order)]
     ax = plt.gca()
     sns.violinplot(
         data=df,
@@ -349,6 +408,8 @@ def save_raincloud_plot(
     ax.set_title(title)
     ax.set_xlabel(xlabel)
     ax.set_ylabel("")
+    if disclosure_note:
+        _add_axis_note(ax, disclosure_note)
     sns.despine(ax=ax, left=False)
     _finish_figure(out_path)
 
@@ -443,13 +504,14 @@ def save_svm_decision_surface(
     grid = pd.DataFrame({feature_cols[0]: xx.ravel(), feature_cols[1]: yy.ravel()})
     zz = model.predict_proba(grid[feature_cols].to_numpy())[:, 1].reshape(xx.shape)
 
-    ax.contourf(xx, yy, zz, levels=np.linspace(0, 1, 11), cmap="RdYlBu_r", alpha=0.48)
+    contour_cmap = LinearSegmentedColormap.from_list("safe_to_spoiled", [SAFE_FILL, SAFE_COLOR, "#f1cfac", SPOILED_COLOR])
+    ax.contourf(xx, yy, zz, levels=np.linspace(0, 1, 11), cmap=contour_cmap, alpha=0.55)
     ax.contour(xx, yy, zz, levels=[0.5], colors=["#9a1f40"], linewidths=2.4)
     scatter = ax.scatter(
         work[feature_cols[0]],
         work[feature_cols[1]],
         c=work[target_col].astype(int),
-        cmap="coolwarm",
+        cmap=ListedColormap([SAFE_COLOR, SPOILED_COLOR]),
         s=110,
         edgecolor="white",
         linewidth=0.9,
@@ -460,7 +522,7 @@ def save_svm_decision_surface(
     ax.set_title("SVM Decision Surface for Chicken Safety Classification")
     ax.set_xlabel("Time (hours)")
     ax.set_ylabel("Fiber Green Channel Intensity")
-    legend1 = ax.legend(*scatter.legend_elements(), title="Class", frameon=False, loc="upper left")
+    legend1 = ax.legend(*scatter.legend_elements(), title="Class", labels=["Safe", "Spoiled"], frameon=False, loc="upper left")
     ax.add_artist(legend1)
     sns.despine(ax=ax)
     _finish_figure(out_path)
@@ -471,7 +533,7 @@ def save_latency_barplot(df: pd.DataFrame, out_path: Path) -> None:
     plt.figure(figsize=(8.8, 6.3))
     ax = plt.gca()
     order = list(df["group"].astype(str))
-    ax.bar(order, df["mean"], yerr=df["std"], color=["#244c5a", "#d17a22", "#7a9e48"][: len(df)], capsize=8, alpha=0.92)
+    ax.bar(order, df["mean"], yerr=df["std"], color=GROUP_PALETTE[: len(df)], capsize=8, alpha=0.92)
     ax.set_title("Halochromic Latency by Formulation")
     ax.set_xlabel("Formulation Group")
     ax.set_ylabel("Response Time (s)")
@@ -511,11 +573,12 @@ def save_economics_breakdown(df: pd.DataFrame, out_path: Path, cost_per_meter: f
     set_publication_style()
     plt.figure(figsize=(9.6, 6.5))
     ax = plt.gca()
-    ingredients = df[df["ingredient"] != "total_fiber_length_m"].copy()
+    ingredients = df[~df["ingredient"].isin(["total_fiber_length_m", "final_cost_per_meter"])].copy()
     ax.barh(ingredients["ingredient"], ingredients["cost_usd"], color="#7a9e48", alpha=0.92)
     for idx, row in enumerate(ingredients.itertuples(index=False)):
-        ax.text(row.cost_usd + 0.003, idx, f"${row.cost_usd:.2f}", va="center", fontsize=10.5)
-    ax.text(0.98, 0.06, f"Estimated production cost = ${cost_per_meter:.2f}/m", transform=ax.transAxes, ha="right", va="bottom", fontsize=12, bbox={"facecolor": "#fff6df", "edgecolor": "#d8cfc2", "boxstyle": "round,pad=0.35"})
+        label = f"${row.cost_usd:.4f}" if row.cost_usd < 0.01 else f"${row.cost_usd:.2f}"
+        ax.text(row.cost_usd + max(ingredients["cost_usd"].max() * 0.03, 0.0002), idx, label, va="center", fontsize=10.5)
+    ax.text(0.98, 0.06, f"Estimated production cost = ${cost_per_meter:.4f}/m", transform=ax.transAxes, ha="right", va="bottom", fontsize=12, bbox={"facecolor": "#fff6df", "edgecolor": "#d8cfc2", "boxstyle": "round,pad=0.35"})
     ax.set_title("Economic Viability Breakdown")
     ax.set_xlabel("Cost (USD)")
     ax.set_ylabel("")
@@ -531,7 +594,7 @@ def save_formulation_radar(df: pd.DataFrame, out_path: Path) -> None:
 
     set_publication_style()
     fig, ax = plt.subplots(figsize=(8.6, 8.0), subplot_kw={"projection": "polar"})
-    palette = ["#244c5a", "#d17a22", "#7a9e48", "#b64d6b"]
+    palette = GROUP_PALETTE
     for idx, row in enumerate(df.itertuples(index=False)):
         values = [float(getattr(row, category)) for category in categories]
         values += values[:1]
@@ -547,4 +610,86 @@ def save_formulation_radar(df: pd.DataFrame, out_path: Path) -> None:
     ax.set_title("Formulation Optimization Radar", pad=24)
     ax.legend(frameon=False, loc="upper right", bbox_to_anchor=(1.16, 1.12))
     _finish_figure(out_path)
+
+
+def save_spoilage_density_cloud(
+    simulated_df: pd.DataFrame,
+    observed_df: pd.DataFrame,
+    out_path: Path,
+    ph_col: str = "meat_surface_ph",
+    signal_col: str = "G",
+) -> None:
+    set_publication_style()
+    fig, ax = plt.subplots(figsize=(9.4, 7.1))
+    sns.kdeplot(
+        data=simulated_df,
+        x=ph_col,
+        y=signal_col,
+        fill=True,
+        levels=16,
+        thresh=0.02,
+        cmap=sns.blend_palette(["#f3e6c8", "#d9b26f", "#a86736", "#5b3421"], as_cmap=True),
+        ax=ax,
+    )
+    ax.scatter(
+        observed_df[ph_col],
+        observed_df[signal_col],
+        s=95,
+        color="#244c5a",
+        edgecolor="white",
+        linewidth=0.9,
+        alpha=0.95,
+        label=f"Observed data (n={len(observed_df)})",
+    )
+    ax.set_title(f"In-Silico Spoilage Density Cloud (Monte Carlo n={len(simulated_df)})")
+    ax.set_xlabel("Measured Meat Surface pH")
+    ax.set_ylabel("Fiber Green-Channel Intensity")
+    ax.legend(frameon=False, loc="upper left")
+    _add_axis_note(ax, DISCLOSURE_TEXT)
+    sns.despine(ax=ax)
+    _finish_figure(out_path)
+
+
+def save_spoilage_response_surface(
+    surface_df: pd.DataFrame,
+    observed_df: pd.DataFrame,
+    out_path: Path,
+    time_col: str = "time_h",
+    ph_col: str = "meat_surface_ph",
+    signal_col: str = "G",
+    r2: float | None = None,
+) -> None:
+    set_publication_style()
+    fig = plt.figure(figsize=(10.4, 8.2))
+    ax = fig.add_subplot(111, projection="3d")
+
+    pivot = surface_df.pivot(index=ph_col, columns=time_col, values=signal_col).sort_index().sort_index(axis=1)
+    time_mesh, ph_mesh = np.meshgrid(pivot.columns.to_numpy(dtype=float), pivot.index.to_numpy(dtype=float))
+    signal_mesh = pivot.to_numpy(dtype=float)
+
+    surf = ax.plot_surface(time_mesh, ph_mesh, signal_mesh, cmap="YlGnBu", edgecolor="none", alpha=0.82)
+    ax.scatter(
+        observed_df[time_col].astype(float),
+        observed_df[ph_col].astype(float),
+        observed_df[signal_col].astype(float),
+        s=80,
+        color="#9a1f40",
+        edgecolor="white",
+        linewidth=0.8,
+        depthshade=False,
+    )
+    title = "3D Spoilage Response Surface"
+    if r2 is not None:
+        title = f"{title} (surface fit R² = {r2:.3f})"
+    ax.set_title(title, pad=18)
+    ax.set_xlabel("Time (hours)", labelpad=10)
+    ax.set_ylabel("Measured Meat Surface pH", labelpad=10)
+    ax.set_zlabel("Fiber Green-Channel Intensity", labelpad=10)
+    ax.view_init(elev=28, azim=132)
+    fig.colorbar(surf, shrink=0.68, aspect=16, pad=0.08, label="Predicted G-channel")
+    _add_figure_note(fig, DISCLOSURE_TEXT)
+    plt.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(out_path, dpi=320, bbox_inches="tight")
+    plt.close(fig)
 

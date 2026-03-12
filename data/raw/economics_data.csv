@@ -1,6 +1,10 @@
 batch_id,ingredient,cost_usd,amount_used,unit,notes
-B01,sodium_alginate,0.15,2.0,g,
-B01,corn_husk_feedstock,0.00,10.0,g,Upcycled waste
-B01,anthocyanin_source,0.05,6.0,mL,
-B01,calcium_chloride,0.10,5.0,g,
-B01,total_fiber_length_m,0.30,15.0,m,Total batch cost $0.30 yields 15m ($0.02/m)
+B01,sodium_alginate,0.0150,2.0,g,Bulk rate ($15/kg)
+B01,calcium_chloride,0.0005,5.0,g,Bulk rate ($500/ton)
+B01,corn_husk_feedstock,0.0000,10.0,g,Upcycled agricultural waste
+B01,sodium_hydroxide,0.0010,5.0,g,Bulk rate ($1000/ton)
+B01,hydrogen_peroxide_35pct,0.0015,10.0,mL,Bulk industrial oxidant ($1.50/L)
+B01,anthocyanin_extract,0.0100,6.0,mL,Industrial food-grade dye ($10/L)
+B01,citric_acid,0.0015,2.0,g,Bulk rate ($1500/ton)
+B01,total_fiber_length_m,0.0295,15.0,m,Total ingredient cost for one 15 m pilot batch
+B01,final_cost_per_meter,0.0020,1.0,m,Derived from ingredient total and recorded explicitly for reporting

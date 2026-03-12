@@ -22,10 +22,11 @@ Run the pipeline in this order:
 python scripts/01_cv_extraction.py
 python scripts/02_biomechanics_anova.py
 python scripts/03_predictive_models.py
+python scripts/04_advanced_ml_augmentation.py
 python scripts/build_figures.py
 ```
 
-The numbered scripts and the `run_*` scripts are equivalent entry points. `build_figures.py` now generates the core figures and, when the latency, stability, digestibility, and economics tables are present, also runs the advanced analysis layer.
+The numbered scripts and the `run_*` scripts are equivalent entry points. A root-level convenience wrapper is also available as `python 04_advanced_ml_augmentation.py`. `build_figures.py` now generates the core figures and, when the latency, stability, digestibility, and economics tables are present, also runs the advanced analysis layer.
 
 ## How The Files Link Together
 
@@ -72,9 +73,12 @@ Advanced figures generated when the extra tables are present include:
 
 - `weibull_probability_plot.png`
 - `tensile_raincloud.png`
+- `tensile_raincloud_monte_carlo.png`
 - `bayesian_tensile_forest.png`
 - `bayesian_tensile_superiority_heatmap.png`
 - `calibration_4pl_curve.png`
+- `spoilage_density_cloud.png`
+- `spoilage_response_surface_3d.png`
 - `latency_raincloud.png`
 - `bayesian_latency_forest.png`
 - `bayesian_latency_superiority_heatmap.png`
