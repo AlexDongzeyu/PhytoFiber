@@ -31,15 +31,6 @@ PhytoFiber/
 │       ├── pH2.jpg … pH10.jpg      # Calibration reference images (pH 2, 4, 6, 8, 10)
 │       └── chicken_0h.jpg … _36h   # Spoilage time-series images (0, 6, 12, 18, 24, 36 h)
 │
-├── img/
-│   └── classification/             # Scanned supporting PDFs (reference records only)
-│       ├── Chicken.pdf             # Chicken spoilage test record
-│       ├── GAS.pdf                 # Latency / gas detection record
-│       ├── My pH for fibre.pdf     # pH calibration record
-│       ├── Tensile Strength Test.pdf
-│       ├── cook and colour stability.pdf
-│       └── digest.pdf              # Digestibility record
-│
 ├── scripts/                        # Main pipeline entry points
 │   ├── 01_cv_extraction.py         # Computer-vision RGB color extraction
 │   ├── 02_biomechanics_anova.py    # Tensile stress calculation + one-way ANOVA
@@ -115,7 +106,7 @@ PhytoFiber/
 │   ├── RAW_DATA_ENTRY_GUIDE.md     # Field-by-field guide for filling raw CSVs
 │   └── DELIVERABLES_CHECKLIST.md   # Checklist of code, data, figure, and board outputs
 │
-├── 04_advanced_ml_augmentation.py  # Root-level convenience wrapper → scripts/04_...py
+├── 04_advanced_ml_augmentation.py  # Convenience wrapper → scripts/04_advanced_ml_augmentation.py
 ├── requirements.txt
 ├── .gitignore
 └── README.md
@@ -188,8 +179,6 @@ See `docs/RAW_DATA_ENTRY_GUIDE.md` for field-level guidance on each file.
 | `data/raw/latency_img/` | Full raw latency test photo archive |
 | `data/raw/stability_img/` | Full raw stability photo archive |
 | `data/raw/digestibility_img/` | Full raw digestibility photo archive |
-| `img/classification/` | Scanned supporting PDFs (reference records, not model inputs) |
-
 The CV pipeline reads from `images/raw/`. The `data/raw/*_img/` folders are raw evidence archives.
 
 ---
