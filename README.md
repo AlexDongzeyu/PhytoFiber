@@ -11,7 +11,6 @@ PhytoFiber is a reproducible analysis project for anthocyanin-cellulose fiber te
 - `src/phytofiber_analysis/`: reusable analysis utilities.
 - `visualizations/`: generated figures (ignored by git).
 - `PhytoFiber_Validation_Phase/`: independent validation dataset, scripts, and validation figures.
-- `logbook/`: project logbook and lab record files.
 - `docs/`: data-entry and deliverable guidance.
 
 ## Quick Start
@@ -56,4 +55,4 @@ Validation phase:
 ## Notes
 
 - `data/processed/` and `visualizations/` are reproducible build artifacts.
-- `img/classification/` and `logbook/` are supporting records, not machine-readable model inputs.
+- `img/classification/` contains supporting scanned references, not machine-readable model inputs.
