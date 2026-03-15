@@ -1,0 +1,2 @@
+test,groups,n_valid,f_stat,p_value,significant_alpha_0_05
+one_way_anova,3,28,22.03658248804138,3.040067013323601e-06,True

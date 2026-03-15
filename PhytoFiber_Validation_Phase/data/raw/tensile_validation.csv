@@ -1,0 +1,31 @@
+Sample,Batch,Group,Avg_Diam_mm,Force_N,Fracture_Loc,Valid_YN,Notes
+T01,1,A_5,1.18,5.18,Center,Y,Clean snap
+T02,1,A_5,1.14,5.21,Center,Y,Clean snap
+T03,1,A_5,1.21,6.04,Center,Y,Clean snap
+T04,2,A_5,1.20,6.51,Upper 3rd,Y,Valid
+T05,2,A_5,1.22,5.90,Center,Y,Valid
+T06,2,A_5,1.19,5.45,Center,Y,Valid
+T07,3,A_5,1.15,5.10,Lower 3rd,Y,Valid
+T08,3,A_5,1.20,5.80,Center,Y,Valid
+T09,3,A_5,1.23,6.20,Center,Y,Valid
+T10,3,A_5,1.17,5.60,Center,Y,Valid
+T11,1,B_10,1.32,7.54,Center,Y,Clean snap
+T12,1,B_10,1.28,8.32,Center,Y,Clean snap
+T13,1,B_10,1.26,8.67,Center,Y,Clean snap
+T14,2,B_10,1.29,8.98,Center,Y,Clean snap
+T15,2,B_10,1.33,1.52,Grip edge,N,Glue slip (Excluded)
+T16,2,B_10,1.30,8.45,Center,Y,Clean snap
+T17,3,B_10,1.27,8.80,Center,Y,Clean snap
+T18,3,B_10,1.31,8.60,Upper 3rd,Y,Clean snap
+T19,3,B_10,1.29,8.25,Center,Y,Clean snap
+T20,3,B_10,1.28,8.75,Center,Y,Clean snap
+T21,1,C_15,1.08,3.74,Center,Y,Clean snap
+T22,1,C_15,1.10,3.30,Center,Y,Clean snap
+T23,1,C_15,1.07,6.19,Center,Y,Clean snap
+T24,2,C_15,1.12,4.50,Upper 3rd,Y,Clean snap
+T25,2,C_15,1.05,0.85,Grip edge,N,Glue slip (Excluded)
+T26,2,C_15,1.09,4.10,Center,Y,Clean snap
+T27,3,C_15,1.11,3.85,Lower 3rd,Y,Clean snap
+T28,3,C_15,1.06,4.60,Center,Y,Clean snap
+T29,3,C_15,1.10,4.25,Center,Y,Clean snap
+T30,3,C_15,1.08,3.95,Center,Y,Clean snap

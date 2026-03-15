@@ -9,6 +9,8 @@ __pycache__/
 .DS_Store
 Thumbs.db
 *.log
+logbook/_*.md
+logbook/PhytoFiber_Master_Logbook_CWSF_ISEF_Complete.docx
 data/processed/*.csv
 data/processed/*.json
 visualizations/*.png
