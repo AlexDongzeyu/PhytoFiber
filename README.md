@@ -106,7 +106,6 @@ PhytoFiber/
 │   ├── RAW_DATA_ENTRY_GUIDE.md     # Field-by-field guide for filling raw CSVs
 │   └── DELIVERABLES_CHECKLIST.md   # Checklist of code, data, figure, and board outputs
 │
-├── 04_advanced_ml_augmentation.py  # Convenience wrapper → scripts/04_advanced_ml_augmentation.py
 ├── requirements.txt
 ├── .gitignore
 └── README.md
@@ -148,7 +147,6 @@ python scripts/build_figures.py
 `build_figures.py` automatically runs the advanced analysis layer (Weibull reliability, Bayesian posteriors, 4PL calibration, SVM surface, latency/stability/digestibility/economics charts) when the supporting input tables are present.
 
 The `run_*.py` scripts in `scripts/` are exact aliases for steps 1–3.
-The root-level `04_advanced_ml_augmentation.py` is a convenience entry point for step 4.
 
 ---
 
